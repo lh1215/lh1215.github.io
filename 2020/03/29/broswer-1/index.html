@@ -151,14 +151,14 @@
 
                         
                         <li>
-                            <a href="/tags/">Tags</a>
+                            <a href="/archive/">Archives</a>
                         </li>
                         
                     
 
                         
                         <li>
-                            <a href="/archive/">Archives</a>
+                            <a href="/tags/">Tags</a>
                         </li>
                         
                     
@@ -214,7 +214,115 @@
                 col-md-10 col-md-offset-1
                 post-container">
 
-                
+                <blockquote>
+<p>文章是环绕 &quot;Chrome 架构：仅仅打开一个页面，为什么会有4个进程？&quot;这个疑问来展开，讲述浏览器的</p>
+<p>架构发展历程，还有不同阶段不同架构的一些利弊</p>
+</blockquote>
+<h1><span id="进程和线程">进程和线程</span></h1>
+<h3><span id="进程和线程">进程和线程</span></h3>
+<ul>
+<li>什么是并行处理</li>
+</ul>
+<blockquote>
+<p>计算机中的并行处理就是同一时刻处理多个任务，使用并行处理能大大提升性能。</p>
+</blockquote>
+<ul>
+<li>线程 VS 进程</li>
+</ul>
+<blockquote>
+<p>线程是不能单独存在的，它是由进程来管理。</p>
+<p>线程：一个进程就是一个程序的运行实例。详细解释就是，启动一个程序的时候，操作系统会为该程序创建一块内存，用来存放代码、运行中的数据和一个执行任务的主线程，我们把这样的一个运行环境叫进程。</p>
+</blockquote>
+<p><img src="https://note.youdao.com/yws/public/resource/8e7c29ccf36eee8def655fbbfc11c1ab/xmlnote/WEBRESOURCE6369d10bb1dd1ecf392d25af21b921a4/1572" alt="image"></p>
+<html>
+<!--在这里插入内容-->
+<div style="text-align: center; color: gray">单线程与多线程的进程对比图</div>
+</html>
+<ul>
+<li>进程和线程的关系</li>
+</ul>
+<blockquote>
+<ol>
+<li>进程中的任意一线程执行出错，都会导致整个进程的崩溃。</li>
+<li>线程之间共享进程中的数据。<br>
+<img src="https://note.youdao.com/yws/public/resource/8e7c29ccf36eee8def655fbbfc11c1ab/xmlnote/WEBRESOURCE9d41225e0e0ae3f95a6da4bfd8398b82/1593" alt="image"></li>
+</ol>
+<html>
+<!--在这里插入内容-->
+<div style="text-align: center; color: >gray">线程之间共享进程中的数据示意图</div>
+</html>
+</blockquote>
+<ul>
+<li>当一个进程关闭之后，操作系统会回收进程所占用的内存。</li>
+</ul>
+<blockquote>
+<p>当一个进程退出时，操作系统会回收该进程所申请的所有资源；即使其中任意线程因为操作不当导致内存泄漏，当进程退出时，这些内存也会被正确回收。</p>
+</blockquote>
+<ul>
+<li>进程之间的内容相互隔离。</li>
+</ul>
+<blockquote>
+<p>保护操作系统中进程互不干扰的技术，每一个进程只能访问自己占有的数据，也就避免出现进程 A 写入数据到进程 B 的情况。正是因为进程之间的数据是严格隔离的，所以一个进程如果崩溃了，或者挂起了，是不会影响到其他进程的。如果进程之间需要进行数据的通信，这时候，就需要使用用于进程间通信（IPC）的机制了。</p>
+</blockquote>
+<h1><span id="单进程浏览器时代">单进程浏览器时代</span></h1>
+<blockquote>
+<p>单进程浏览器是指浏览器的所有功能模块都是运行在同一个进程里<br>
+<img src="https://note.youdao.com/yws/public/resource/8e7c29ccf36eee8def655fbbfc11c1ab/xmlnote/WEBRESOURCEae7ba984682920369e290775f78754ff/1611" alt="image"></p>
+<html>
+<!--在这里插入内容-->
+<div style="text-align: center; color: > gray">单进程浏览器架构示意图</div>
+</html>
+<p>弊端:</p>
+<ol>
+<li>不稳定</li>
+</ol>
+<p>早期浏览器需要借助于插件来实现诸如 Web 视频、Web 游戏等各种强大的功能，但是插件是最容易出问题的模块，并且还运行在浏览器进程之中，所以一个插件的意外崩溃会引起整个浏览器的崩溃。</p>
+<p>除了插件之外，渲染引擎模块也是不稳定的，通常一些复杂的 JavaScript 代码就有可能引起渲染引擎模块的崩溃。和插件一样，渲染引擎的崩溃也会导致整个浏览器的崩溃。</p>
+<ol start="2">
+<li>不流畅</li>
+</ol>
+<p>所有页面的渲染模块、JavaScript 执行环境以及插件都是运行在同一个线程中的，这就意味着同一时刻只能有一个模块可以执行。如果有一个无限循环的脚本在执行，那么浏览器会变得越来越慢，最终导致崩溃。</p>
+<ol start="3">
+<li>不安全</li>
+</ol>
+<p>插件可以使用 C/C++ 等代码编写，通过插件可以获取到操作系统的任意资源，当你在页面运行一个插件时也就意味着这个插件能完全操作你的电脑。如果是个恶意插件，那么它就可以释放病毒、窃取你的账号密码，引发安全性问题。</p>
+<p>至于页面脚本，它可以通过浏览器的漏洞来获取系统权限，这些脚本获取系统权限之后也可以对你的电脑做一些恶意的事情，同样也会引发安全问题。</p>
+</blockquote>
+<h1><span id="多进程浏览器时代">多进程浏览器时代</span></h1>
+<ul>
+<li>早期多进程架构</li>
+</ul>
+<blockquote>
+<p><img src="https://note.youdao.com/yws/public/resource/8e7c29ccf36eee8def655fbbfc11c1ab/xmlnote/WEBRESOURCE7c5cc80b3965de3de5f2631ab8ea0cab/1642" alt="image"></p>
+<html>
+<!--在这里插入内容-->
+<div style="text-align: center; color: > gray">单进程浏览器架构示意图</div>
+</html>
+<p>从图中可以看出，Chrome<br>
+的页面是运行在单独的渲染进程中的，同时页面里的插件&gt; 也是运行在单独的插件进程之中，而进程之间是通过 IPC &gt; 机制进行通信（如图中虚线部分）。</p>
+<p>==我们先看看如何解决不稳定的问题==。由于进程是相互隔离的，所以当一个页面或者插件崩溃时，影响到的仅仅是当前的页面进程或者插件进程，并不会影响到浏览器和其他页面，这就完美地解决了页面或者插件的崩溃会导致整个浏览器崩溃，也就是不稳定的问题。</p>
+<p>==接下来再来看看不流畅的问题是如何解决的==。同样，JavaScript 也是运行在渲染进程中的，所以即使 JavaScript 阻塞了渲染进程，影响到的也只是当前的渲染页面，而并不会影响浏览器和其他页面，因为其他页面的脚本是运行在它们自己的渲染进程中的。所以当我们再在 Chrome 中运行上面那个死循环的脚本时，没有响应的仅仅是当前的页面。==对于内存泄漏的解决方法那就更简单了==，因为当关闭一个页面时，整个渲染进程也会被关闭，之后该进程所占用的内存都会被系统回收，这样就轻松解决了浏览器页面的内存泄漏问题。</p>
+<p>==最后我们再来看看上面的两个安全问题是怎么解决的==。采用多进程架构的额外好处是可以使用安全沙箱，你可以把沙箱看成是操作系统给进程上了一把锁，沙箱里面的程序可以运行，但是不能在你的硬盘上写入任何数据，也不能在敏感位置读取任何数据，例如你的文档和桌面。Chrome 把插件进程和渲染进程锁在沙箱里面，这样即使在渲染进程或者插件进程里面执行了恶意程序，恶意程序也无法突破沙箱去获取系统权限。</p>
+</blockquote>
+<ul>
+<li>目前多进程架构</li>
+</ul>
+<blockquote>
+<p><img src="https://note.youdao.com/yws/public/resource/8e7c29ccf36eee8def655fbbfc11c1ab/xmlnote/WEBRESOURCEbbf9c4c7b3c284a7d399fd73454b8f81/1667" alt="image"></p>
+<ul>
+<li>浏览器进程。主要负责界面显示、用户交互、子进程管理，同时提供存储等功能。</li>
+<li>渲染进程。核心任务是将 HTML、CSS 和 JavaScript 转换为用户可以与之交互的网页，排版引擎 Blink 和 JavaScript 引擎 V8 都是运行在该进程中，默认情况下，Chrome 会为每个 Tab 标签创建一个渲染进程。出于安全考虑，渲染进程都是运行在沙箱模式下。</li>
+<li>GPU 进程。其实，Chrome 刚开始发布的时候是没有 GPU 进程的。而 GPU 的使用初衷是为了实现 3D CSS 的效果，只是随后网页、Chrome 的 UI 界面都选择采用 GPU 来绘制，这使得 GPU 成为浏览器普遍的需求。最后，Chrome 在其多进程架构上也引入了 GPU 进程。</li>
+<li>网络进程。主要负责页面的网络资源加载，之前是作为一个模块运行在浏览器进程里面的，直至最近才独立出来，成为一个单独的进程。</li>
+<li>插件进程。主要是负责插件的运行，因插件易崩溃，所以需要通过插件进程来隔离，以保证插件进程崩溃不会对浏览器和页面造成影响。</li>
+</ul>
+<p>==问题：==</p>
+<ul>
+<li>==更高的资源占用==。因为每个进程都会包含公共基础结构的副本（如 JavaScript 运行环境），这就意味着浏览器会消耗更多的内存资源。</li>
+<li>==更复杂的体系架构==。浏览器各模块之间耦合性高、扩展性差等问题，会导致现在的架构已经很难适应新的需求了。</li>
+</ul>
+</blockquote>
+
                 
 
                 <hr>
@@ -253,7 +361,7 @@
         <div id="toc" class="toc-article">
         <strong class="toc-title">Contents</strong>
         
-          <ol class="nav">none</ol>
+          <ol class="toc-nav"><li class="toc-nav-item toc-nav-level-1"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">1.</span> <span class="toc-nav-text">进程和线程</span></a><ol class="toc-nav-child"><li class="toc-nav-item toc-nav-level-3"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">1.0.1.</span> <span class="toc-nav-text">进程和线程</span></a></li></ol></li></ol></li><li class="toc-nav-item toc-nav-level-1"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">2.</span> <span class="toc-nav-text">单进程浏览器时代</span></a></li><li class="toc-nav-item toc-nav-level-1"><a class="toc-nav-link" href="#null"><span class="toc-nav-number">3.</span> <span class="toc-nav-text">多进程浏览器时代</span></a></li></ol>
         
         </div>
       </aside>
